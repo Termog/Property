@@ -1,4 +1,4 @@
-use api::{self, BoardState};
+use api::{self, BoardState, PlayingField};
 use tui::buffer::Buffer;
 use tui::layout::Rect;
 use tui::text::Spans;
@@ -103,6 +103,11 @@ fn calculate_player_coordinates(field_number: u16) -> (u16, u16) {
     //maybe error handeling;
     (x, y)
 }
+
+pub struct App {
+    game: Game,
+    field: Vec<PlayingField>,
+}
 //object holding game state for full page rerendering
 //don't kow if fields should be public
 //dirty TODO fix this
@@ -141,10 +146,10 @@ impl Widget for PlayerWidget {
         let mut offset = 1;
         //offsets player position until it doesn't overlap another player
         //should make some kind of check if it overlaps the bounderies and maybe zoom in on field
-        while buf.get(x * width + offset, y * height + 1).symbol != " " {
+        while buf.get(x * width + offset + area.x, y * height + 1 + area.y).symbol != " " {
             offset += 1;
         }
-        buf.get_mut(x * width + offset, y * height + 1)
+        buf.get_mut(x * width + offset + area.x, y * height + 1 + area.y)
             //should add symbol to player struct and let player pick it
             .set_symbol(&self.icon.to_string());
     }
@@ -166,20 +171,22 @@ pub fn get_fieldblock_size(rect: Rect) -> (u16, u16) {
 
 //renders a pair of dice in the middle of the screen
 //TODO find a way to render them over the field and not fully overwrite it
+//FIGURE OUT WHY THIS IS OF CENTER
 pub fn render_dice<B>(area: Rect, f: &mut Frame<B>, dice1: u16, dice2: u16)
 where
     B: tui::backend::Backend,
 {
+    let x_ofset = area.width - area.height*2;
     let dice_height = 5;
     let dice_width = 10;
     let dice_block_1 = Rect::new(
-        (area.width - dice_width) / 2,
+        (area.width - dice_width - x_ofset) / 2 + x_ofset,
         (area.height - dice_height) / 2,
         dice_width,
         dice_height,
     );
     let dice_block_2 = Rect::new(
-        (area.width + dice_width) / 2,
+        (area.width + dice_width - x_ofset) / 2 + x_ofset,
         (area.height - dice_height) / 2,
         dice_width,
         dice_height,

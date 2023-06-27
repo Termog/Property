@@ -38,6 +38,22 @@ fn main() {
             break;
         }
     }
+
+    //sending out paying filed
+    for player_id in 0..game.get_player_number() {
+        //encapsulate message
+        let message = api::ServerMessage::SendBoard(
+            game.field
+                .iter()
+                .map(|x| From::<api::PlayingField>::from(x.into()))
+                .collect(),
+        );
+        //extract players stream
+        let mut stream = &mut game.get_player_mut(player_id).stream;
+        //serialize right into the stream
+        //TODO error handeling
+        bincode::serialize_into(&mut stream, &message).unwrap();
+    }
     //at this point all players should be connected and the game starts
     println!("Game is starting");
 

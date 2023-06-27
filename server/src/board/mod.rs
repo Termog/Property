@@ -21,6 +21,8 @@ pub struct Game {
     player_count: u16,
     player_max: u16,
     player_turn: u16,
+    field: Vec<PlayingField>,
+    pub field: Vec<PlayingField>,
     rng: ThreadRng, //main game thread used for all rng elements
 }
 

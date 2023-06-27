@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 //Enum representing messages sent from server to client
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessage {
+    SendBoard(Vec<PlayingField>),
     Update(BoardState),
     GameStarting,
     YourTurn(u16, u16),
