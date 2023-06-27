@@ -1,6 +1,6 @@
 use api;
 use rand::prelude::*;
-use std::net::TcpStream;
+use std::{net::TcpStream, rc::Rc};
 
 #[derive(Debug)]
 pub enum Error {
@@ -202,6 +202,80 @@ impl Player {
     pub fn control(&self) {
         ()
     }
+}
+
+//enum representing one filed on the board
+pub enum PlayinField {
+    Go(u64),
+    //don't know if they should hold an iterator
+    ComunityChest(Box<dyn Iterator<Item = ChestCard>>),
+    Chance(Box<dyn Iterator<Item = Chance>>),
+    FreeParking,
+    GoToJail,
+    Jail,
+    IncomeTax(u64),
+    LuxuryTax(u64),
+    Property(Property),
+    RailRoad(RailRoad),
+    Utilitie(Utility),
+}
+
+//enum holding all color types of streets
+pub enum ColorGroup {
+    Brown,
+    LigthBlue,
+    Pink,
+    Orange,
+    Red,
+    Yellow,
+    Green,
+    DarkBlue,
+}
+
+//Property object representing a single street
+pub struct Property {
+    color: ColorGroup,
+    name: String,
+    description: String,
+    price: u64,
+    //holds an array with rent values with zero houses, one house .. four houses and a hotel.
+    rent: [u64; 6],
+    //value means the Mortgage Value
+    value: u64,
+    owner: Option<Rc<Player>>,
+}
+
+//railroad object representing a single railroad
+pub struct RailRoad {
+    name: String,
+    description: String,
+    price: u64,
+    //hold an array with rent values if the player holds one raildroad .. four railroads
+    rent: [u64; 4],
+    value: u64,
+    owner: Option<Rc<Player>>,
+}
+
+//chance object representing a chance card and holding a boxed pointer to a mutable function that
+//performes the action described in the card
+pub struct Chance {
+    description: String,
+    action: Box<dyn FnMut(&mut Player) -> ()>,
+}
+
+//same thing as chance
+pub struct ChestCard {
+    description: String,
+    action: Box<dyn FnMut(&mut Player) -> ()>,
+}
+
+//object representing a utility field
+pub struct Utility {
+    name: String,
+    price: u64,
+    //holds the cube amount multiplier with one utility field and two utility fields
+    rent: [u64; 2],
+    value: u64,
 }
 
 //should move it to some object (probably player)
