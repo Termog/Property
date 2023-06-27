@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use std::net::TcpStream;
 
 pub enum Error {
     TooManyPlayers,
@@ -61,6 +62,12 @@ impl Game {
         //I think renderer should be included in the player, the game itself is static
         self.player_turn = (self.player_turn + 1)  % self.player_count; 
     }
+    pub fn get_player_number(&self) -> u32 {
+        self.player_count
+    }
+    pub fn get_player_max(&self) -> u32 {
+        self.player_max
+    }
 }
 
 //structure representing a player
@@ -69,6 +76,7 @@ impl Game {
 pub struct Player {
     position: u32,
     name: String,
+    stream: TcpStream,
 }
 
 impl Player {
@@ -78,10 +86,11 @@ impl Player {
     fn move_to(&mut self,field_number: u32) {
         self.position = field_number;
     }
-    pub fn create(name: &str) -> Self {
+    pub fn create(name: &str,stream: TcpStream) -> Self {
         Player { 
             position: 0,
             name: name.to_owned(),
+            stream: stream,
         }
     }
     //function that is called to let player make desisions

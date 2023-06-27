@@ -1,8 +1,9 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::str::from_utf8;
 use std::{io, thread, time::Duration};
-
+//api for client server interactions
+use  api;
+//crate for terminal ui
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -10,7 +11,7 @@ use tui::{
     terminal::Frame,
     Terminal,
 };
-
+//backend for tui
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -18,6 +19,32 @@ use crossterm::{
 };
 
 fn main() -> Result<(), io::Error> {
+    //should probably move this to a connection function
+    //and should make a object for the game interactions
+    match TcpStream::connect("localhost:3000") {
+        Ok(stream) => {
+            let mut username = String::new();
+            println!("Successfully connected to 3000");
+            print!("Input you username");
+            //create a structure with player info that will be sent to the server
+            std::io::stdin().read_line(&mut username).unwrap();
+            let connection_message = api::ConnectionInfo {
+                name: username,
+            };
+            //encapsulate message in a ClientMessage enum
+            let message = api::ClientMessage::Connect(connection_message);
+            //serialize it strait into the tcp stream
+            bincode::serialize_into(stream,&message).unwrap();
+        },
+        //should write error handeling some day
+        Err(_) => {
+            panic!();
+        }
+    }
+
+    //code to redner alternate terminal and render the game ui
+    //needs a lot of work
+    //should probably move this to a separate function
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -36,10 +63,11 @@ fn main() -> Result<(), io::Error> {
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
-
     Ok(())
 }
 
+//function that renders the playing field that will be static
+//need a lot of work
 fn render_field<B> (f: &mut Frame<B>)
 where 
     B: tui::backend::Backend,
@@ -63,37 +91,4 @@ where
         let block = Block::default().borders(Borders::ALL);
         f.render_widget(block, block_size);
     }
-}
-
-//simple client echo function
-fn echo() {
-    match TcpStream::connect("localhost:3000") {
-        Ok(mut stream) => {
-            println!("Successfully connected to 3000");
-
-            let msg = b"HI I AM CLIENT";
-
-            stream.write(msg).unwrap();
-            println!("Sent message, waiting for a reply");
-
-            let mut data = [0 as u8; 14];
-            match stream.read_exact(&mut data) {
-                Ok(_) => {
-                    if &data == msg {
-                        println!("Reply is ok");
-                    } else {
-                        let text = from_utf8(&data).unwrap();
-                        println!("unxepected: {}", text);
-                    }
-                }
-                Err(e) => {
-                    println!("failed to recieve data: {}", e);
-                }
-            }
-        }
-        Err(e) => {
-            println!("Failed to connect: {}", e);
-        }
-    }
-    println!("Terminated.");
 }
