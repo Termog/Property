@@ -1,8 +1,7 @@
+use api;
 use tui::buffer::Buffer;
 use tui::layout::Rect;
 use tui::widgets::Widget;
-use api;
-
 
 //trait for rendering player widget
 //maybe remove it I should remove it I don't know
@@ -15,6 +14,7 @@ pub trait Player {
 pub struct PlayerMain {
     name: String,
     position: u16,
+    icon: char,
 }
 //struct representing other player
 //maybe should not have separate structs but have one and one PlayerMain object that incapsulates
@@ -22,6 +22,7 @@ pub struct PlayerMain {
 pub struct PlayerOther {
     name: String,
     position: u16,
+    icon: char,
 }
 //implementing functions for PlayerMain
 impl PlayerMain {
@@ -30,6 +31,7 @@ impl PlayerMain {
         PlayerMain {
             name: name.to_owned(),
             position: 0,
+            icon: '@',
         }
     }
     //and maybe this one is also useless
@@ -43,14 +45,16 @@ impl Player for PlayerMain {
     fn get_widget(&self) -> PlayerWidget {
         PlayerWidget {
             position: self.position,
+            icon: self.icon,
         }
     }
 }
 
-impl Player for  PlayerOther {
+impl Player for PlayerOther {
     fn get_widget(&self) -> PlayerWidget {
         PlayerWidget {
             position: self.position,
+            icon: self.icon,
         }
     }
 }
@@ -61,6 +65,7 @@ impl From<api::PlayerMain> for PlayerMain {
         PlayerMain {
             name: player.name,
             position: player.position,
+            icon: player.icon,
         }
     }
 }
@@ -70,6 +75,7 @@ impl From<api::PlayerOther> for PlayerOther {
         PlayerOther {
             name: player.name,
             position: player.position,
+            icon: player.icon,
         }
     }
 }
@@ -99,8 +105,8 @@ fn calculate_player_coordinates(field_number: u16) -> (u16, u16) {
 // struct representing playermain wiget
 pub struct PlayerWidget {
     position: u16,
+    icon: char,
 }
-
 
 //trait to render player as widget
 impl Widget for PlayerWidget {
@@ -116,7 +122,7 @@ impl Widget for PlayerWidget {
         }
         buf.get_mut(x * width + offset, y * height + 1)
             //should add symbol to player struct and let player pick it
-            .set_symbol("@");
+            .set_symbol(&self.icon.to_string());
     }
 }
 

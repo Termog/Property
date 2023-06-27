@@ -1,6 +1,6 @@
+use api;
 use rand::prelude::*;
 use std::net::TcpStream;
-use api;
 
 pub enum Error {
     TooManyPlayers,
@@ -12,7 +12,6 @@ pub enum GameState {
     Preparing,
     PreThrow, //change name later
     CubeThrow,
-
 }
 
 //main game structure
@@ -34,35 +33,35 @@ impl Game {
             player_count: 0,
             player_max,
             player_turn: 0,
-            rng : thread_rng(),
+            rng: thread_rng(),
         }
-    } 
+    }
     //function adding players to a game
-    pub fn add(&mut self, player: Player) -> Result<(),Error> {
+    pub fn add(&mut self, player: Player) -> Result<(), Error> {
         if self.player_count < self.player_max {
             self.players.push(player);
-            self.player_count+=1;
+            self.player_count += 1;
             Ok(())
         } else {
             Err(Error::GameFull)
         }
     }
     //function that is called to start the game
-    pub fn start(&mut self) -> Result<(),Error> {
+    pub fn start(&mut self) -> Result<(), Error> {
         //maybe render the initial game
         self.players.shuffle(&mut self.rng);
         Ok(())
     }
     pub fn turn(&mut self) {
         let player = &mut self.players[self.player_turn as usize];
-        player.control(); //should be a communication loop 
-        //some render and game state change function
-        let (cube1,cube2) = roll_dice(&mut self.rng);
+        player.control(); //should be a communication loop
+                          //some render and game state change function
+        let (cube1, cube2) = roll_dice(&mut self.rng);
         //some render function
         player.move_steps(cube1 + cube2);
         //some render position function
         //I think renderer should be included in the player, the game itself is static
-        self.player_turn = (self.player_turn + 1)  % self.player_count; 
+        self.player_turn = (self.player_turn + 1) % self.player_count;
     }
     pub fn get_player_number(&self) -> u16 {
         self.player_count
@@ -79,9 +78,13 @@ impl Game {
         self.players.get_mut(id as usize).unwrap()
     }
     //functions that creates an api::Boardstate from current boardstate
-    pub fn boardstate(&self,player_id: u16) -> api::BoardState {
+    pub fn boardstate(&self, player_id: u16) -> api::BoardState {
         //this is a mess should make everything better
-        let mut players : Vec<api::PlayerOther> = self.players.iter().map(|i| {Into::<api::PlayerOther>::into(i)}).collect();
+        let mut players: Vec<api::PlayerOther> = self
+            .players
+            .iter()
+            .map(|i| Into::<api::PlayerOther>::into(i))
+            .collect();
         players.swap_remove(player_id as usize);
         api::BoardState {
             //TODO add error handeling
@@ -101,6 +104,7 @@ impl Game {
 pub struct Player {
     position: u16,
     name: String,
+    icon: char,
     pub stream: TcpStream,
 }
 
@@ -110,6 +114,7 @@ impl From<&Player> for api::PlayerMain {
         api::PlayerMain {
             name: player.name.clone(),
             position: player.position,
+            icon: player.icon,
         }
     }
 }
@@ -119,21 +124,23 @@ impl From<&Player> for api::PlayerOther {
         api::PlayerOther {
             name: player.name.clone(),
             position: player.position,
+            icon: player.icon,
         }
     }
 }
 
 impl Player {
-    fn move_steps(&mut self,steps: u16) {
+    fn move_steps(&mut self, steps: u16) {
         self.position = (self.position + steps) % 40;
     }
-    fn move_to(&mut self,field_number: u16) {
+    fn move_to(&mut self, field_number: u16) {
         self.position = field_number;
     }
-    pub fn create(name: &str,stream: TcpStream) -> Self {
-        Player { 
+    pub fn create(name: &str, icon: char, stream: TcpStream) -> Self {
+        Player {
             position: 0,
             name: name.to_owned(),
+            icon,
             stream,
         }
     }
@@ -144,9 +151,6 @@ impl Player {
 }
 
 //should move it to some object (probably player)
-pub fn roll_dice(rng: &mut ThreadRng) -> (u16,u16) {
-    return (
-        rng.gen_range(1..=6),
-        rng.gen_range(1..=6),
-        )
+pub fn roll_dice(rng: &mut ThreadRng) -> (u16, u16) {
+    return (rng.gen_range(1..=6), rng.gen_range(1..=6));
 }
