@@ -1,26 +1,75 @@
 use tui::buffer::Buffer;
 use tui::layout::Rect;
 use tui::widgets::Widget;
+use api;
+
+
+//trait for rendering player widget
+//maybe remove it I should remove it I don't know
+pub trait Player {
+    //function that returns Player Widget
+    fn get_widget(&self) -> PlayerWidget;
+}
 
 //struct representing clients player
 pub struct PlayerMain {
     name: String,
     position: u16,
 }
-
+//struct representing other player
+//maybe should not have separate structs but have one and one PlayerMain object that incapsulates
+//it
+pub struct PlayerOther {
+    name: String,
+    position: u16,
+}
+//implementing functions for PlayerMain
 impl PlayerMain {
+    //I think this one is uselsess
     pub fn create(name: &str) -> Self {
         PlayerMain {
             name: name.to_owned(),
             position: 0,
         }
     }
+    //and maybe this one is also useless
     pub fn update(&mut self, position: u16) {
         self.position = position;
     }
-    pub fn get_widget(&self) -> PlayerMainWidget {
-        PlayerMainWidget {
+}
+
+//maybe have generic implementation with macro or something like this
+impl Player for PlayerMain {
+    fn get_widget(&self) -> PlayerWidget {
+        PlayerWidget {
             position: self.position,
+        }
+    }
+}
+
+impl Player for  PlayerOther {
+    fn get_widget(&self) -> PlayerWidget {
+        PlayerWidget {
+            position: self.position,
+        }
+    }
+}
+
+//from conversion to easily convert communication api objects into client objecAts
+impl From<api::PlayerMain> for PlayerMain {
+    fn from(player: api::PlayerMain) -> Self {
+        PlayerMain {
+            name: player.name,
+            position: player.position,
+        }
+    }
+}
+//same thing here
+impl From<api::PlayerOther> for PlayerOther {
+    fn from(player: api::PlayerOther) -> Self {
+        PlayerOther {
+            name: player.name,
+            position: player.position,
         }
     }
 }
@@ -48,21 +97,25 @@ fn calculate_player_coordinates(field_number: u16) -> (u16, u16) {
 }
 
 // struct representing playermain wiget
-pub struct PlayerMainWidget {
+pub struct PlayerWidget {
     position: u16,
 }
 
+
 //trait to render player as widget
-impl Widget for PlayerMainWidget {
+impl Widget for PlayerWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let (width, height) = get_fieldblock_size(area);
         let (x, y) = calculate_player_coordinates(self.position);
-        //  buf.get_mut(x*width+width/2,y*height+height/2).set_symbol("@");
+
         let mut offset = 1;
-        while buf.get(x * width + 4, y * height + 1).symbol != " " {
+        //offsets player position until it doesn't overlap another player
+        //should make some kind of check if it overlaps the bounderies and maybe zoom in on field
+        while buf.get(x * width + offset, y * height + 1).symbol != " " {
             offset += 1;
         }
         buf.get_mut(x * width + offset, y * height + 1)
+            //should add symbol to player struct and let player pick it
             .set_symbol("@");
     }
 }

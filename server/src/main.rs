@@ -1,12 +1,13 @@
 pub mod board;
-use std::net::{TcpListener, TcpStream, Shutdown};
-use std::io::{Read, Write};
-use rand::prelude::*;
+//use std::net::{TcpListener, TcpStream, Shutdown};
+use std::net::{TcpListener, TcpStream};
+//use std::io::{Read, Write};
+//use rand::prelude::*;
 use bincode;
 
 fn main() {
     //creates and rng thread for all game events
-    let mut rng = thread_rng();
+    //let mut rng = thread_rng();
 
     let listener = TcpListener::bind("0.0.0.0:3000").unwrap();
     println!("server listening on 0.0.0.0:3000");
@@ -42,8 +43,20 @@ fn main() {
     }
     //at this point all players should be connected and the game starts
     println!("Game is starting");
+    //should send out game starting messages to all players
     //drops tcp listener 
     drop(listener);
+
+    //send initial board update message to all players
+    for player_id in 0..game.get_player_number() {
+        //encapsulate message
+        let message = api::ServerMessage::Update(game.boardstate(player_id));
+        //extract players stream
+        let mut stream = &mut game.get_player_mut(player_id).stream;
+        //serialize right into the stream
+        //TODO error handeling
+        bincode::serialize_into(&mut stream,&message).unwrap();
+    }
 }
 
 //function that handels an incoming tcp connection and if the connect message is sent adds the
@@ -59,9 +72,6 @@ fn connect_player(mut stream: TcpStream) -> board::Player {
     let player_info = match message {
         api::ClientMessage::Connect(player_info) => player_info,
         //add error handeling by sending error on incorrect connection to stream and closing it
-        _ => {
-            panic!();
-        },
     };
     println!("Player {} connected",player_info.name);
     board::Player::create(&player_info.name,stream)

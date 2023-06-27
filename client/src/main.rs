@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+//use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::{io, thread, time::Duration};
 //api for client server interactions
@@ -6,14 +6,17 @@ use api;
 //crate for terminal ui
 use tui::{
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout, Rect},
+    //layout::{Constraint, Direction, Layout, Rect},
+    layout::Rect,
     terminal::Frame,
-    widgets::{Block, Borders, Widget},
+    //widgets::{Block, Borders, Widget},
+    widgets::{Block, Borders},
     Terminal,
 };
 //backend for tui
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    //event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -23,9 +26,8 @@ pub mod board;
 fn main() -> Result<(), io::Error> {
     //should probably move this to a connection function
     //and should make a object for the game interactions
-    /*
-        match TcpStream::connect("localhost:3000") {
-            Ok(stream) => {
+        let stream = match TcpStream::connect("localhost:3000") {
+            Ok(mut stream) => {
                 let mut username = String::new();
                 println!("Successfully connected to 3000");
                 print!("Input you username");
@@ -37,14 +39,16 @@ fn main() -> Result<(), io::Error> {
                 //encapsulate message in a ClientMessage enum
                 let message = api::ClientMessage::Connect(connection_message);
                 //serialize it strait into the tcp stream
-                bincode::serialize_into(stream,&message).unwrap();
+                bincode::serialize_into(&mut stream,&message).unwrap();
+                stream
             },
             //should write error handeling some day
             Err(_) => {
                 panic!();
             }
-        }
-    */
+        };
+    //there should be a function wating for a game to start before going into raw terminal mode
+     
     //code to redner alternate terminal and render the game ui
     //needs a lot of work
     //should probably move this to a separate function
@@ -53,15 +57,32 @@ fn main() -> Result<(), io::Error> {
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let mut player = board::PlayerMain::create("termog");
-    for i in 0..40 {
-        player.update(i);
-        terminal.draw(|f| render_field(f, &player))?;
-        thread::sleep(Duration::from_millis(500));
-    }
+    
+    
+    //wait for a message from server and deserialize it on recieving 
+    let message: api::ServerMessage = match bincode::deserialize_from(&stream) {
+        Ok(message) => message,
+        Err(_) => panic!(),
+    };
+    //parse the message
+    let gamestate = match message {
+        api::ServerMessage::Update(gamestate) => gamestate,
+    };
+    //extract main player from board object
+    let player: board::PlayerMain = gamestate.player.into();
+    //extract other players form board object
+    let players: Vec<board::PlayerOther> = gamestate.players.into_iter().map(|i| {Into::<board::PlayerOther>::into(i)}).collect();
+    //draw the updated field
+    terminal.draw(|f| render_field(f, &player, &players))?;
+    // for i in 0..40 {
+    //     player.update(i);
+    //     terminal.draw(|f| render_field(f, &player))?;
+    //     thread::sleep(Duration::from_millis(500));
+    // }
 
     thread::sleep(Duration::from_millis(5000));
 
+    //returns to normal terminal
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
@@ -72,14 +93,20 @@ fn main() -> Result<(), io::Error> {
     Ok(())
 }
 
+
 //function that renders the playing field that will be static
 //need a lot of work
 //TODO add some minimal display size and if the display is smaller show message to resize the
 //display or make the font smaller
-fn render_field<B>(f: &mut Frame<B>, player: &board::PlayerMain)
+fn render_field<B,T,K>(f: &mut Frame<B>, player: &T,players: &Vec<K>)
 where
+    //generic bounds on argumetns, maybe they are unneseccary
     B: tui::backend::Backend,
+    T: board::Player,
+    K: board::Player,
 {
+
+    //rendering the squares
     let (width, height) = board::get_fieldblock_size(f.size());
     for i in 0..11 {
         let block_size = Rect::new(i * width, 0, width, height);
@@ -97,5 +124,10 @@ where
         let block = Block::default().borders(Borders::ALL);
         f.render_widget(block, block_size);
     }
+    //render main player
     f.render_widget(player.get_widget(), f.size());
+    //render other players
+    for player in players {
+        f.render_widget(player.get_widget(), f.size());
+    }
 }

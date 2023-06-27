@@ -1,9 +1,13 @@
 use serde::{Serialize, Deserialize};
 
+
+//should rewrite the whole api to use references because inefficient
+
 //Enum representing messages sent from server to client
 #[derive(Serialize,Deserialize,Debug)]
 pub enum ServerMessage {
     Update(BoardState),
+    //add game starting message that is empty
 }
 
 //Enum representing messages sent from client to server
@@ -18,21 +22,21 @@ pub enum ClientMessage {
 pub struct BoardState {
     pub player: PlayerMain,
     pub players: Vec<PlayerOther>,
-    pub turn: u32,
+    pub turn: u16,
 }
 
 //struct representing oponents for each players
 #[derive(Serialize,Deserialize,Debug)]
 pub struct PlayerOther {
     pub name: String,
-    pub position: u32,
+    pub position: u16,
 }
 
 //struct representing players player data
 #[derive(Serialize,Deserialize,Debug)]
 pub struct PlayerMain {
     pub name: String,
-    pub position: u32,
+    pub position: u16,
 }
 
 //information that is sent to connect to a game by a player
