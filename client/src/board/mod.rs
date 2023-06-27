@@ -1,4 +1,4 @@
-use api;
+use api::{self, BoardState};
 use tui::buffer::Buffer;
 use tui::layout::Rect;
 use tui::text::Spans;
@@ -103,6 +103,28 @@ fn calculate_player_coordinates(field_number: u16) -> (u16, u16) {
     //maybe error handeling;
     (x, y)
 }
+//object holding game state for full page rerendering
+//don't kow if fields should be public
+//dirty TODO fix this
+pub struct Game {
+    pub players: Vec<PlayerOther>,
+    pub player: PlayerMain,
+    pub turn: u16,
+}
+
+impl From<api::BoardState> for Game {
+    fn from(board: BoardState) -> Self {
+        Game {
+            players: board
+                .players
+                .into_iter()
+                .map(|p| PlayerOther::from(p))
+                .collect(),
+            player: board.player.into(),
+            turn: board.turn,
+        }
+    }
+}
 
 // struct representing playermain wiget
 pub struct PlayerWidget {
@@ -182,6 +204,7 @@ where
     f.render_widget(dice_paragraph_2, dice_block_2);
 }
 
+//cargo fmt fucks with pretty placements
 //predefined ascii art for dice
 static DICE: &'static [[&'static str; 3]; 6] = &[
     ["        ", "   ()   ", "        "],

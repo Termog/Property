@@ -81,26 +81,14 @@ fn main() -> Result<(), io::Error> {
         Ok(message) => message,
         Err(_) => panic!(),
     };
-    //parse the message
-    let gamestate = match message {
-        api::ServerMessage::Update(gamestate) => gamestate,
+    //parse the message and convert into Game object
+    let mut gamestate: board::Game = match message {
+        api::ServerMessage::Update(gamestate) => gamestate.into(),
         _ => panic!(),
     };
-    //extract main player from board object
-    let player: board::PlayerMain = gamestate.player.into();
-    //extract other players form board object
-    let players: Vec<board::PlayerOther> = gamestate
-        .players
-        .into_iter()
-        .map(|i| Into::<board::PlayerOther>::into(i))
-        .collect();
+
     //draw the updated field
-    terminal.draw(|f| render_field(f, &player, &players))?;
-    // for i in 0..40 {
-    //     player.update(i);
-    //     terminal.draw(|f| render_field(f, &player))?;
-    //     thread::sleep(Duration::from_millis(500));
-    // }
+    terminal.draw(|f| render_field(f, &gamestate.player, &gamestate.players))?;
 
     //there should be infinite loop that handles incoming messages and player inputs
     //placeholder testing shit
@@ -114,17 +102,12 @@ fn main() -> Result<(), io::Error> {
 
         //TODO? maybe move each match to a separate function
         match message {
-            api::ServerMessage::Update(gamestate) => {
+            api::ServerMessage::Update(boardstate) => {
                 //TODO Extremely bad, just copy pasted should move this shit out to a function
-                let player: board::PlayerMain = gamestate.player.into();
-                //extract other players form board object
-                let players: Vec<board::PlayerOther> = gamestate
-                    .players
-                    .into_iter()
-                    .map(|i| Into::<board::PlayerOther>::into(i))
-                    .collect();
-                //draw the updated field
-                terminal.draw(|f| render_field(f, &player, &players))?;
+                //maybe could do conversion inline on match statement
+                //updating gamestate
+                gamestate = boardstate.into();
+                terminal.draw(|f| render_field(f, &gamestate.player, &gamestate.players))?;
                 thread::sleep(Duration::from_millis(2500));
                 i += 1;
             }
@@ -133,7 +116,10 @@ fn main() -> Result<(), io::Error> {
                 //draws dice, however it overrides the whole board
                 //TODO resolve this problem
                 //maybe make dice a widget
-                terminal.draw(|f| board::render_dice(f.size(), f, dice1, dice2))?;
+                terminal.draw(|f| {
+                    render_field(f, &gamestate.player, &gamestate.players);
+                    board::render_dice(f.size(), f, dice1, dice2);
+                })?;
                 thread::sleep(Duration::from_millis(1500));
                 let message = api::ClientMessage::RolledDice;
                 bincode::serialize_into(&stream, &message).unwrap();
