@@ -58,7 +58,14 @@ fn main() -> Result<(), io::Error> {
             panic!();
         }
     };
-    //there should be a function wating for a game to start before going into raw terminal mode
+    //wait for starting message before initializing the playing field
+    let mut starting = false;
+    while starting != true {
+        starting = match bincode::deserialize_from(&stream) {
+            Ok(api::ServerMessage::GameStarting) => true,
+            _ => false,
+        };
+    }
 
     //code to redner alternate terminal and render the game ui
     //needs a lot of work
@@ -77,6 +84,7 @@ fn main() -> Result<(), io::Error> {
     //parse the message
     let gamestate = match message {
         api::ServerMessage::Update(gamestate) => gamestate,
+        _ => panic!(),
     };
     //extract main player from board object
     let player: board::PlayerMain = gamestate.player.into();

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessage {
     Update(BoardState),
+    GameStarting,
     //add game starting message that is empty
 }
 

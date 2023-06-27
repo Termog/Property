@@ -43,6 +43,16 @@ fn main() {
     }
     //at this point all players should be connected and the game starts
     println!("Game is starting");
+
+    for player_id in 0..game.get_player_number() {
+        //encapsulate message
+        let message = api::ServerMessage::GameStarting;
+        //extract players stream
+        let mut stream = &mut game.get_player_mut(player_id).stream;
+        //serialize right into the stream
+        //TODO error handeling
+        bincode::serialize_into(&mut stream, &message).unwrap();
+    }
     //should send out game starting messages to all players
     //drops tcp listener
     drop(listener);
