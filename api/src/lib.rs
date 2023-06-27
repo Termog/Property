@@ -7,13 +7,14 @@ use serde::{Deserialize, Serialize};
 pub enum ServerMessage {
     Update(BoardState),
     GameStarting,
-    //add game starting message that is empty
+    YourTurn(u16, u16),
 }
 
 //Enum representing messages sent from client to server
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Connect(ConnectionInfo),
+    RolledDice,
 }
 
 //BoardState object

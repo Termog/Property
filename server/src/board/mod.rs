@@ -2,6 +2,7 @@ use api;
 use rand::prelude::*;
 use std::net::TcpStream;
 
+#[derive(Debug)]
 pub enum Error {
     TooManyPlayers,
     GameFull,
@@ -52,15 +53,54 @@ impl Game {
         self.players.shuffle(&mut self.rng);
         Ok(())
     }
+
+    //function that sends board updates to each player
+    //questening its usefullness
+    pub fn send_board_updates(&mut self) {
+        for player_id in 0..self.get_player_number() {
+            //encapsulate message
+            let message = api::ServerMessage::Update(self.boardstate(player_id));
+            //extract players stream
+            let mut stream = &mut self.get_player_mut(player_id).stream;
+            //serialize right into the stream
+            //TODO error handeling
+            bincode::serialize_into(&mut stream, &message).unwrap();
+        }
+    }
+
     pub fn turn(&mut self) {
-        let player = &mut self.players[self.player_turn as usize];
-        player.control(); //should be a communication loop
-                          //some render and game state change function
-        let (cube1, cube2) = roll_dice(&mut self.rng);
+        //dirty way there should be something more ellegant
+        {
+            //I think I should be able to iter_mut and map over players and create
+            //a Vec<&mut Player>
+            //And than I should be able to partialy update other players and the main player
+            let player = &mut self.players[self.player_turn as usize];
+            let (cube1, cube2) = roll_dice(&mut self.rng);
+
+            let message = api::ServerMessage::YourTurn(cube1, cube2);
+            let mut stream = &mut player.stream;
+
+            //TODO error handeling
+            bincode::serialize_into(&mut stream, &message).unwrap();
+
+            //TODO error handeling
+            match bincode::deserialize_from(&mut stream) {
+                Ok(api::ClientMessage::RolledDice) => (),
+                _ => panic!(),
+            };
+            player.move_steps(cube1 + cube2);
+        }
+        self.send_board_updates();
+
+        //let (cube1, cube2) = roll_dice(&mut self.rng);
         //some render function
-        player.move_steps(cube1 + cube2);
         //some render position function
         //I think renderer should be included in the player, the game itself is static
+
+        // player.control(); //should be a communication loop
+        //some render and game state change function
+
+        //Create Your turn message
         self.player_turn = (self.player_turn + 1) % self.player_count;
     }
     pub fn get_player_number(&self) -> u16 {

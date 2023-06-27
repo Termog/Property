@@ -102,7 +102,40 @@ fn main() -> Result<(), io::Error> {
     //     thread::sleep(Duration::from_millis(500));
     // }
 
-    thread::sleep(Duration::from_millis(5000));
+    //there should be infinite loop that handles incoming messages and player inputs
+    //placeholder testing shit
+    thread::sleep(Duration::from_millis(2500));
+    let mut i = 0;
+    while i < 10 {
+        let message: api::ServerMessage = match bincode::deserialize_from(&stream) {
+            Ok(message) => message,
+            Err(_) => panic!(),
+        };
+
+        //TODO? maybe move each match to a separate function
+        match message {
+            api::ServerMessage::Update(gamestate) => {
+                //TODO Extremely bad, just copy pasted should move this shit out to a function
+                let player: board::PlayerMain = gamestate.player.into();
+                //extract other players form board object
+                let players: Vec<board::PlayerOther> = gamestate
+                    .players
+                    .into_iter()
+                    .map(|i| Into::<board::PlayerOther>::into(i))
+                    .collect();
+                //draw the updated field
+                terminal.draw(|f| render_field(f, &player, &players))?;
+                thread::sleep(Duration::from_millis(2500));
+                i += 1;
+            }
+            api::ServerMessage::YourTurn(_dice1, _dice2) => {
+                //TODO pretty dice rendering widget
+                let message = api::ClientMessage::RolledDice;
+                bincode::serialize_into(&stream, &message).unwrap();
+            }
+            _ => panic!(),
+        }
+    }
 
     //returns to normal terminal
     disable_raw_mode()?;

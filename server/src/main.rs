@@ -2,13 +2,10 @@ pub mod board;
 //use std::net::{TcpListener, TcpStream, Shutdown};
 use std::net::{TcpListener, TcpStream};
 //use std::io::{Read, Write};
-//use rand::prelude::*;
 use bincode;
+use rand::prelude::*;
 
 fn main() {
-    //creates and rng thread for all game events
-    //let mut rng = thread_rng();
-
     let listener = TcpListener::bind("0.0.0.0:3000").unwrap();
     println!("server listening on 0.0.0.0:3000");
 
@@ -57,15 +54,12 @@ fn main() {
     //drops tcp listener
     drop(listener);
 
+    game.start().unwrap();
     //send initial board update message to all players
-    for player_id in 0..game.get_player_number() {
-        //encapsulate message
-        let message = api::ServerMessage::Update(game.boardstate(player_id));
-        //extract players stream
-        let mut stream = &mut game.get_player_mut(player_id).stream;
-        //serialize right into the stream
-        //TODO error handeling
-        bincode::serialize_into(&mut stream, &message).unwrap();
+    game.send_board_updates();
+    //this should be the game loop
+    loop {
+        game.turn()
     }
 }
 
@@ -82,6 +76,7 @@ fn connect_player(mut stream: TcpStream) -> board::Player {
     let player_info = match message {
         api::ClientMessage::Connect(player_info) => player_info,
         //add error handeling by sending error on incorrect connection to stream and closing it
+        _ => panic!(),
     };
     println!("Player {} connected", player_info.name);
     board::Player::create(&player_info.name, player_info.icon, stream)
