@@ -23,7 +23,7 @@ fn main() -> Result<(), io::Error> {
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    terminal.draw(|f| {
+    terminal.draw(|f| {  //figure out how to directly pass render_field function
         render_field(f);
     })?;
 
