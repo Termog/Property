@@ -1,7 +1,9 @@
 use api;
 use tui::buffer::Buffer;
 use tui::layout::Rect;
-use tui::widgets::Widget;
+use tui::text::Spans;
+use tui::widgets::{Block, Borders, Paragraph, Widget};
+use tui::Frame;
 
 //trait for rendering player widget
 //maybe remove it I should remove it I don't know
@@ -139,3 +141,53 @@ pub fn get_fieldblock_size(rect: Rect) -> (u16, u16) {
     };
     (width, height)
 }
+
+//renders a pair of dice in the middle of the screen
+//TODO find a way to render them over the field and not fully overwrite it
+pub fn render_dice<B>(area: Rect, f: &mut Frame<B>, dice1: u16, dice2: u16)
+where
+    B: tui::backend::Backend,
+{
+    let dice_height = 5;
+    let dice_width = 10;
+    let dice_block_1 = Rect::new(
+        (area.width - dice_width) / 2,
+        (area.height - dice_height) / 2,
+        dice_width,
+        dice_height,
+    );
+    let dice_block_2 = Rect::new(
+        (area.width + dice_width) / 2,
+        (area.height - dice_height) / 2,
+        dice_width,
+        dice_height,
+    );
+    //this line takes a slice of raw strings iterates and maps over it creating a vector of spans
+    //and than makes a paragraph out of the vector
+    let dice_paragraph_1 = Paragraph::new(
+        DICE[(dice1 - 1) as usize]
+            .iter()
+            .map(|&l| Spans::from(l))
+            .collect::<Vec<Spans>>(),
+    )
+    .block(Block::default().borders(Borders::ALL));
+    let dice_paragraph_2 = Paragraph::new(
+        DICE[(dice2 - 1) as usize]
+            .iter()
+            .map(|&l| Spans::from(l))
+            .collect::<Vec<Spans>>(),
+    )
+    .block(Block::default().borders(Borders::ALL));
+    f.render_widget(dice_paragraph_1, dice_block_1);
+    f.render_widget(dice_paragraph_2, dice_block_2);
+}
+
+//predefined ascii art for dice
+static DICE: &'static [[&'static str; 3]; 6] = &[
+    ["        ", "   ()   ", "        "],
+    ["     () ", "        ", " ()     "],
+    ["     () ", "   ()   ", " ()     "],
+    [" ()  () ", "        ", " ()  () "],
+    [" ()  () ", "   ()   ", " ()  () "],
+    [" ()  () ", " ()  () ", " ()  () "],
+];

@@ -106,7 +106,7 @@ fn main() -> Result<(), io::Error> {
     //placeholder testing shit
     thread::sleep(Duration::from_millis(2500));
     let mut i = 0;
-    while i < 10 {
+    while i < 2 {
         let message: api::ServerMessage = match bincode::deserialize_from(&stream) {
             Ok(message) => message,
             Err(_) => panic!(),
@@ -128,8 +128,13 @@ fn main() -> Result<(), io::Error> {
                 thread::sleep(Duration::from_millis(2500));
                 i += 1;
             }
-            api::ServerMessage::YourTurn(_dice1, _dice2) => {
+            api::ServerMessage::YourTurn(dice1, dice2) => {
                 //TODO pretty dice rendering widget
+                //draws dice, however it overrides the whole board
+                //TODO resolve this problem
+                //maybe make dice a widget
+                terminal.draw(|f| board::render_dice(f.size(), f, dice1, dice2))?;
+                thread::sleep(Duration::from_millis(1500));
                 let message = api::ClientMessage::RolledDice;
                 bincode::serialize_into(&stream, &message).unwrap();
             }
