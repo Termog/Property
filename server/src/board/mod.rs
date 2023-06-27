@@ -89,6 +89,11 @@ impl Game {
                 _ => panic!(),
             };
             player.move_steps(cube1 + cube2);
+            //if player passes the [0] feild add money
+            //TODO get the money ammount from game config
+            if player.position as i16 - ((cube1 + cube2) as i16) < 0 {
+                player.money += 200;
+            }
         }
         self.send_board_updates();
 
@@ -108,6 +113,10 @@ impl Game {
     }
     pub fn get_player_max(&self) -> u16 {
         self.player_max
+    }
+    //extracts inmmutable refrence to players vector
+    pub fn get_players(&self) -> &Vec<Player> {
+        &self.players
     }
     //extracts mutable reference to players vector
     pub fn get_players_mut(&mut self) -> &mut Vec<Player> {
@@ -143,8 +152,9 @@ impl Game {
 //or make it generic and defind a trait for player controls
 pub struct Player {
     position: u16,
-    name: String,
+    pub name: String,
     icon: char,
+    pub money: u64,
     pub stream: TcpStream,
 }
 
@@ -155,6 +165,7 @@ impl From<&Player> for api::PlayerMain {
             name: player.name.clone(),
             position: player.position,
             icon: player.icon,
+            money: player.money,
         }
     }
 }
@@ -165,6 +176,7 @@ impl From<&Player> for api::PlayerOther {
             name: player.name.clone(),
             position: player.position,
             icon: player.icon,
+            money: player.money,
         }
     }
 }
@@ -179,6 +191,8 @@ impl Player {
     pub fn create(name: &str, icon: char, stream: TcpStream) -> Self {
         Player {
             position: 0,
+            //chagne this to money to games default value
+            money: 0,
             name: name.to_owned(),
             icon,
             stream,

@@ -94,7 +94,7 @@ fn main() -> Result<(), io::Error> {
     //placeholder testing shit
     thread::sleep(Duration::from_millis(2500));
     let mut i = 0;
-    while i < 2 {
+    while i < 20 {
         let message: api::ServerMessage = match bincode::deserialize_from(&stream) {
             Ok(message) => message,
             Err(_) => panic!(),

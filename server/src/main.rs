@@ -3,7 +3,7 @@ pub mod board;
 use std::net::{TcpListener, TcpStream};
 //use std::io::{Read, Write};
 use bincode;
-use rand::prelude::*;
+//use rand::prelude::*;
 
 fn main() {
     let listener = TcpListener::bind("0.0.0.0:3000").unwrap();
@@ -59,7 +59,11 @@ fn main() {
     game.send_board_updates();
     //this should be the game loop
     loop {
-        game.turn()
+        game.turn();
+        for player in game.get_players() {
+            //temp money printing
+            println!("{}:{}", player.name, player.money);
+        }
     }
 }
 

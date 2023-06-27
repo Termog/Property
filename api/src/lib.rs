@@ -32,6 +32,7 @@ pub struct PlayerOther {
     pub name: String,
     pub position: u16,
     pub icon: char,
+    pub money: u64,
 }
 
 //struct representing players player data
@@ -40,6 +41,7 @@ pub struct PlayerMain {
     pub name: String,
     pub position: u16,
     pub icon: char,
+    pub money: u64,
 }
 
 //information that is sent to connect to a game by a player
